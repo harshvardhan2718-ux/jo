@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobFinder - Job Portal</title>
+
+<style>
+body{font-family:Arial;margin:0;background:#f4f6f9}
+header{background:#0f172a;color:white;padding:15px 25px;display:flex;justify-content:space-between;align-items:center}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-circle{width:40px;height:40px;background:#2563eb;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:bold}
+button{padding:10px 14px;border:none;border-radius:6px;background:#2563eb;color:white;cursor:pointer}
+button:hover{background:#1d4ed8}
+input,textarea{padding:10px;margin:6px 0;width:100%;border-radius:6px;border:1px solid #ccc}
+.container{padding:20px}
+.card{background:white;padding:18px;border-radius:10px;margin-bottom:15px;box-shadow:0 4px 10px rgba(0,0,0,0.1)}
+.hidden{display:none}
+nav button{margin-left:10px}
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">
+<div class="logo-circle">JF</div>
+<h2>JobFinder</h2>
+</div>
+<nav id="navArea"></nav>
+</header>
+
+<!-- LOGIN PAGE -->
+<div id="loginPage" class="container">
+<h2>Login</h2>
+<input id="username" placeholder="Username">
+<input id="password" type="password" placeholder="Password">
+<select id="role">
+<option value="user">User</option>
+<option value="admin">Admin</option>
+</select>
+<button onclick="login()">Login</button>
+<p>Demo Login → user/user OR admin/admin</p>
+</div>
+
+<!-- JOB LIST PAGE -->
+<div id="jobsPage" class="container hidden">
+<h2>Available Jobs</h2>
+<div id="jobContainer"></div>
+</div>
+
+<!-- ADMIN PANEL -->
+<div id="adminPage" class="container hidden">
+<h2>Admin Dashboard</h2>
+<div class="card">
+<h3>Add New Job</h3>
+<input id="jobTitle" placeholder="Job Title">
+<input id="jobCompany" placeholder="Company">
+<input id="jobLocation" placeholder="Location">
+<textarea id="jobDesc" placeholder="Job Description"></textarea>
+<button onclick="addJob()">Post Job</button>
+</div>
+<div id="adminJobs"></div>
+</div>
+
+<!-- USER DASHBOARD -->
+<div id="dashboardPage" class="container hidden">
+<h2>My Applications</h2>
+<div id="applications"></div>
+</div>
+
+<script>
+
+let currentUser=null;
+
+// Demo jobs stored locally
+let jobs = JSON.parse(localStorage.getItem("jobs")) || [
+ {title:"Frontend Developer",company:"TechNova",location:"Remote",description:"Build modern UI and responsive applications."},
+ {title:"Machine Learning Intern",company:"AI Labs",location:"Bangalore",description:"Train ML models and analyze datasets."}
+];
+
+function saveJobs(){
+ localStorage.setItem("jobs",JSON.stringify(jobs));
+}
+
+function showPage(page){
+ document.querySelectorAll(".container").forEach(p=>p.classList.add("hidden"));
+ document.getElementById(page).classList.remove("hidden");
+}
+
+function login(){
+ const u=document.getElementById("username").value;
+ const p=document.getElementById("password").value;
+ const role=document.getElementById("role").value;
+
+ if((u==="user"&&p==="user")||(u==="admin"&&p==="admin")){
+ currentUser={name:u,role:role};
+ setupNav();
+ role==="admin"?showAdmin():showJobs();
+ }else alert("Invalid login");
+}
+
+function logout(){
+ currentUser=null;
+ location.reload();
+}
+
+function setupNav(){
+ const nav=document.getElementById("navArea");
+ nav.innerHTML="";
+
+ if(currentUser.role==="user"){
+ nav.innerHTML=`<button onclick="showJobs()">Jobs</button>
+ <button onclick="showDashboard()">Dashboard</button>
+ <button onclick="logout()">Logout</button>`;
+ }
+
+ if(currentUser.role==="admin"){
+ nav.innerHTML=`<button onclick="showAdmin()">Admin Panel</button>
+ <button onclick="logout()">Logout</button>`;
+ }
+}
+
+function showJobs(){
+ showPage("jobsPage");
+ displayJobs();
+}
+
+function displayJobs(){
+ const container=document.getElementById("jobContainer");
+ container.innerHTML="";
+
+ jobs.forEach((job,i)=>{
+ container.innerHTML+=`
+ <div class="card">
+ <h3>${job.title}</h3>
+ <p><b>${job.company}</b> • ${job.location}</p>
+ <p>${job.description}</p>
+ <input type="file" id="resume-${i}">
+ <button onclick="applyJob(${i})">Apply</button>
+ </div>`;
+ });
+}
+
+function applyJob(index){
+ const file=document.getElementById(`resume-${index}`);
+ if(file.files.length===0){alert("Upload resume first");return;}
+
+ let apps=JSON.parse(localStorage.getItem("applications"))||[];
+ apps.push({user:currentUser.name,job:jobs[index].title,resume:file.files[0].name});
+ localStorage.setItem("applications",JSON.stringify(apps));
+ alert("Application submitted ✅");
+}
+
+function showDashboard(){
+ showPage("dashboardPage");
+ const list=document.getElementById("applications");
+ let apps=JSON.parse(localStorage.getItem("applications"))||[];
+
+ list.innerHTML="";
+ apps.filter(a=>a.user===currentUser.name).forEach(a=>{
+ list.innerHTML+=`<div class='card'>${a.job} — Resume: ${a.resume}</div>`;
+ });
+}
+
+function showAdmin(){
+ showPage("adminPage");
+ renderAdminJobs();
+}
+
+function addJob(){
+ const job={
+ title:jobTitle.value,
+ company:jobCompany.value,
+ location:jobLocation.value,
+ description:jobDesc.value
+ };
+ jobs.push(job);
+ saveJobs();
+ renderAdminJobs();
+ alert("Job posted ✅");
+}
+
+function renderAdminJobs(){
+ const div=document.getElementById("adminJobs");
+ div.innerHTML="<h3>Posted Jobs</h3>";
+ jobs.forEach(j=>{
+ div.innerHTML+=`<div class='card'>${j.title} - ${j.company}</div>`;
+ });
+}
+
+</script>
+
+</body>
+</html>
+
+
